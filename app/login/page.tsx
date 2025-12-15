@@ -13,10 +13,13 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
+      const params = new URLSearchParams(window.location.search);
+      const target = params.get("target");
+
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password, target })
       });
 
       let data: any = null;

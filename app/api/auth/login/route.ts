@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { verifyPassword, signJwt, createRefreshToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   let body: any;
   try {
@@ -14,7 +16,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { email, password, redirect } = body ?? {};
+  const { email, password, target } = body ?? {};
   if (!email || !password) {
     return NextResponse.json(
       { message: "Email i hasło są wymagane" },
@@ -53,12 +55,33 @@ export async function POST(request: Request) {
       path: "/"
     });
 
-    const redirectUrl =
-      user.role === "ADMIN" || user.role === "SHOP_MANAGER" ? "/admin" : "/";
+    const ssoBase = process.env.WP_SSO_CONSUME_URL || process.env.NEXT_PUBLIC_WP_SSO_CONSUME_URL;
+    const adminPanelUrl = process.env.ADMIN_PANEL_URL || "/admin";
+
+    let redirectUrl: string;
+
+    if (user.role === "ADMIN" || user.role === "SHOP_MANAGER") {
+      // admin/shop manager
+      if (target === "wp-admin" && ssoBase) {
+        redirectUrl = `${ssoBase}?token=${accessToken}&target=wp-admin`;
+      } else if (target === "admin-panel") {
+        redirectUrl = adminPanelUrl;
+      } else {
+        // domyślnie wewnętrzny panel admina (z wyborem)
+        redirectUrl = "/admin";
+      }
+    } else {
+      // zwykły klient → przekierowanie do WooCommerce przez SSO, jeśli skonfigurowane
+      if (ssoBase) {
+        redirectUrl = `${ssoBase}?token=${accessToken}`;
+      } else {
+        redirectUrl = "/";
+      }
+    }
 
     return NextResponse.json({
       accessToken,
-      redirectUrl: redirect || redirectUrl,
+      redirectUrl,
       role: user.role
     });
   } catch (err: any) {

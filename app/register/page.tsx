@@ -13,10 +13,13 @@ export default function RegisterPage() {
     setError(null);
     setLoading(true);
     try {
+      const params = new URLSearchParams(window.location.search);
+      const target = params.get("target");
+
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password, target })
       });
 
       let data: any = null;
