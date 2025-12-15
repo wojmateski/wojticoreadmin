@@ -18,13 +18,21 @@ export default function RegisterPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.message || "Błąd rejestracji");
+
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        // brak JSON (np. 500 bez body)
       }
-      window.location.href = data.redirectUrl ?? "/";
+
+      if (!res.ok) {
+        throw new Error(data?.message || "Błąd rejestracji (serwer)");
+      }
+
+      window.location.href = data?.redirectUrl ?? "/";
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Nieznany błąd");
     } finally {
       setLoading(false);
     }
@@ -39,11 +47,23 @@ export default function RegisterPage() {
       <form onSubmit={onSubmit} className="space-y-3">
         <div className="space-y-1">
           <label className="label">Email</label>
-          <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input
+            className="input"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
         </div>
         <div className="space-y-1">
           <label className="label">Hasło</label>
-          <input className="input" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+          <input
+            className="input"
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
         </div>
         {error && <div className="text-red-400 text-sm">{error}</div>}
         <button className="button-primary w-full" disabled={loading} type="submit">
